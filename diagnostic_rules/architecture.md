@@ -1,6 +1,6 @@
 ## 1. 文档目标与适用范围
 
-本文件定义用于**汽车诊断软件车系工程（如 HD_BEIQI）业务逻辑层的架构设计原则**，重点约束：
+本文件规定用于**汽车诊断软件车系工程（如 HD_BEIQI）业务逻辑层的架构设计原则**，重点约束：
 
 - 高内聚、低耦合的模块划分；
 - 分层架构与依赖方向；
@@ -236,24 +236,44 @@ HD_<Carline>/code
 
 ## 7. C++14 与平台约束下的架构规则
 
-### 7.1 语言与异常约束
+### 7.1 语言与异常约束设计模式
 
-1. **C++14 标准**
-   - 所有业务代码应以 C++14 为基准进行设计；
-   - 禁止使用高于 C++14 的语言特性（如结构化绑定、`if constexpr` 等）。
+> **背景**：`tech_stack.md` 已选定 C++14 且禁用异常。本节规定在此约束下的**架构实现模式**。
 
-2. **无异常策略**
-   - 禁止在代码中使用：
-     - `throw` 抛出异常；
-     - `try` / `catch` 块；
-   - 对资源管理：
-     - 仍然推荐使用 RAII（智能指针、管理类）；
-     - 但析构函数中不得抛出异常。
+1. **错误返回模式（Result Pattern）**
+   - 由于无法使用 throw/catch，所有可能失败的业务函数**MUST**采用统一的返回模式。
+   - **推荐实现**：
+     ```cpp
+     enum class ErrorCode {
+         Ok,
+         Timeout,
+         InvalidParameter,
+         TransportError,
+         InternalError,
+         // ...
+     };
 
-3. **错误返回模式**
-   - 推荐为关键业务函数设计统一的错误返回模式：
-     - 如 `enum class ErrorCode` + `struct Result<T> { T value; ErrorCode error; }`；
-   - 上层必须检查结果对象中的错误码，不得无视返回值。
+     template <typename T>
+     struct Result {
+         T value;
+         ErrorCode error;
+         bool isOk() const { return error == ErrorCode::Ok; }
+         
+         // Helper constructor for success
+         static Result<T> Success(T v) { return { v, ErrorCode::Ok }; }
+         // Helper constructor for failure
+         static Result<T> Failure(ErrorCode e) { return { T{}, e }; }
+     };
+     ```
+   - **强制检查**：调用方必须检查 `result.isOk()` 或 `result.error`，严禁直接访问 `value` 而不校验。
+
+2. **RAII 与资源安全**
+   - 资源管理类（Handle, Socket, Memory）的析构函数**必须**保证不抛出异常。
+   - 任何可能失败的初始化逻辑应放在 `init()` 或工厂方法中，而不是构造函数中（因为构造函数失败无法抛异常）。
+
+3. **C++14 特性使用边界**
+   - 允许使用：`std::make_unique`, `std::shared_ptr`, lambda 表达式, `auto`。
+   - 禁止使用：C++17 的 `std::optional`, `std::variant`（除非引入了兼容库），应使用自定义或 Platform 提供的替代品。
 
 ### 7.2 与 platform / JSON 的集成
 
@@ -272,42 +292,32 @@ HD_<Carline>/code
 
 ## 8. RP1210 动态加载架构原则
 
+> **背景**：`tech_stack.md` 规定 RP1210 必须通过 DLL 动态加载。本节规定**代码实现结构**。
+
 ### 8.1 专用模块与文件划分
 
 1. **单独代码文件**
-   - 所有 RP1210 相关的：
-     - 动态库加载（`LoadLibrary` / `GetProcAddress` 或等效机制）；
-     - 函数指针声明与绑定；
-     - 初始化与卸载流程；
-   - 必须集中在 **单独的 C++ 实现文件和头文件对** 中，例如：
-     - `infrastructure/rp1210_loader.h`
-     - `infrastructure/rp1210_loader.cpp`
+   - 所有 RP1210 相关的底层操作（LoadLibrary, GetProcAddress, 函数指针转换）必须集中在 **单独的 C++ 实现文件** 中。
+   - 推荐路径：`infrastructure/rp1210_loader.h` / `.cpp`。
 
 2. **抽象接口隔离**
-   - 上层业务不得直接接触 RP1210 函数指针；
-   - `rp1210_loader` 模块应对外暴露：
-     - 一个抽象的通信接口（如 `IRp1210Channel`）或工厂类；
-     - 屏蔽操作系统 API 和具体函数名。
+   - 业务逻辑（App/Domain）**不得**直接包含 RP1210 头文件或接触函数指针。
+   - `rp1210_loader` 模块应对外暴露抽象接口（如 `IRp1210Channel`），屏蔽 Windows API 细节。
 
 ### 8.2 动态加载与故障处理
 
 1. **加载失败处理**
-   - 动态库加载失败、函数绑定失败必须：
-     - 返回明确的错误码或错误状态；
-     - 不得导致程序崩溃；
-     - 上层可根据错误选择降级策略（如禁止使用相关设备并提示）。
+   - 若 DLL 不存在或函数地址获取失败，`Load()` 函数必须返回明确的 `ErrorCode`。
+   - **严禁**导致程序崩溃（Crash）。
+   - 上层业务应处理加载失败（例如：禁用相关功能并提示用户“未检测到 VCI 驱动”）。
 
 2. **运行时安全**
-   - 在每次调用 RP1210 函数前，必须确保：
-     - 相应的函数指针非空；
-     - 设备句柄有效；
-   - 对 RP1210 返回的错误码进行完整解析与处理，必要时映射到统一的 `ErrorCode`。
+   - 每次调用函数指针前，建议进行非空检查（或在加载阶段保证全部成功）。
+   - 封装层应捕获 RP1210 返回的错误码，并转换为统一的 `ErrorCode`。
 
 3. **资源清理**
-   - 设计清晰的生命周期管理：
-     - 设备打开/关闭；
-     - 动态库加载/卸载；
-   - 使用 RAII 封装，确保即便在中途错误返回，也不会泄漏句柄或内存。
+   - 必须实现 `Unload()` 或析构逻辑，确保 `FreeLibrary` 被正确调用。
+   - 使用 RAII 封装设备 Connect/Disconnect 状态，防止异常流程导致的连接泄露。
 
 ---
 
