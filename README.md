@@ -1,6 +1,6 @@
 ---
 description: 自动路由规则集：根据任务上下文加载 Global 或 Domain 规则
-globs: *
+globs: null
 alwaysApply: true
 ---
 
