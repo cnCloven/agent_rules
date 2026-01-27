@@ -1,0 +1,67 @@
+---
+description: 逆向工程规范与安全指南 (Reverse Engineering)
+globs: reverse_engineering/**/*, **/*.idb, **/*.exe, diagnostic_rules/**/*
+alwaysApply: true
+---
+
+# 🕵️ 逆向工程规范 (Reverse Engineering Guidelines)
+
+**目标**：规范逆向分析流程，确保操作安全合规，产出可验证的分析文档。
+
+## 🚨 逆向自检清单 (Reverse Engineering Checklist)
+
+在开始任何逆向工作前，**MUST** 执行以下检查：
+
+- [ ] **环境隔离**：分析**MUST**在隔离的虚拟机 (VM) 或沙箱中进行，严禁在开发主机直接运行目标程序。
+- [ ] **法律合规**：仅分析授权范围内的组件，**严禁**上传专有二进制到公共平台 (如 VirusTotal)。
+- [ ] **指纹留存**：开始前**MUST**计算并记录目标文件的 SHA256 哈希值。
+- [ ] **文档记录**：所有发现（字符串、逻辑、算法）**MUST**实时记录在 `doc/reverse/analysis.md`。
+
+## 🛠️ 推荐工具链 (Toolchain)
+
+| 类别 | 推荐工具 | 用途 |
+| :--- | :--- | :--- |
+| **静态分析** | **IDA Pro**, **Ghidra** | 反汇编、控制流分析、伪代码生成 |
+| **动态调试** | **x64dbg** (Windows), **GDB** (Linux) | 运行时调试、内存断点、寄存器查看 |
+| **二进制编辑** | **010 Editor**, **HxD** | 结构化解析、Patch、十六进制查看 |
+| **网络分析** | **Wireshark** | 抓包分析 DoIP/UDS 流量 |
+| **辅助脚本** | **Python** (IDAPython) | 自动化解密、批量重命名 |
+
+## 📝 标准分析流程 (Standard Process)
+
+### 1. 目标识别 (Reconnaissance)
+- **Hash**: `certutil -hashfile target.dll SHA256`
+- **Info**: 检查文件头 (PE/ELF)、编译时间、链接库 (Dependency Walker)。
+
+### 2. 静态分析 (Static Analysis)
+- **Strings**: 提取所有字符串，搜索关键词 (如 `SecurityAccess`, `0x27`, `Seed`).
+- **Imports**: 检查导入表，重点关注 `LoadLibrary` (动态加载 RP1210) 和 `WriteFile` (日志/通信).
+- **Exports**: 分析导出函数，推测 API 接口定义。
+
+### 3. 动态调试 (Dynamic Analysis)
+- **Hooking**: 挂钩关键 API (如 `DeviceIoControl`) 监控硬件交互。
+- **Tracing**: 跟踪数据流，定位加密/解密函数入口。
+
+## ✅ DO (最佳实践)
+
+```markdown
+# Analysis Log Example
+
+## Target
+- File: `SecAccess.dll`
+- SHA256: `E3B0C442...`
+
+## Findings
+1. **String Search**: Found "Seed: %02X" at address `0x10002040`.
+2. **XRef Analysis**: Function `sub_10001000` references the string.
+3. **Algorithm**: 
+   - Input: 4 bytes (Seed)
+   - Logic: XOR with `0xA5A5` then rotate left 2 bits.
+   - Output: 4 bytes (Key)
+```
+
+## ❌ DON'T (常见错误)
+
+- **直接运行**：不要双击未知的 `.exe`，始终在调试器或受控环境中启动。
+- **只看不记**：不要只在 IDA 中看代码，必须同步编写外部文档，因为 IDB 文件可能损坏或丢失。
+- **侵入式修改**：在未完全理解逻辑前，不要随意 Patch 二进制文件，可能导致校验失败。

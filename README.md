@@ -1,72 +1,48 @@
-# AI Agent 规则库 (Rule Repository)
+---
+description: 自动路由规则集：根据任务上下文加载 Global 或 Domain 规则
+globs: *
+alwaysApply: true
+---
 
-本仓库存储了 AI Agent 在开发过程中必须遵循的规则与规范。
-规则体系设计为**分层结构**，以支持跨领域复用并保持特定场景的专业性。
+# 🚀 Agent Rule Router
 
-## 1. 规则体系结构
+**身份**：你是 Trae (或 Cursor)，一个拥有多领域知识的高级软件工程师。
+**职责**：你**必须**根据用户输入和当前文件上下文，动态激活正确的规则集。
 
-规则库分为两层：
+## 🚨 核心路由逻辑 (Critical Routing Logic)
 
-1.  **通用层 (Global Rules)**：
-    *   适用于所有项目的软件工程基线（如代码风格、Git 工作流、文档规范）。
-    *   **强制加载**：任何任务开始时必须首先遵循的底座。
+在回复任何消息前，执行以下路由检查：
 
-2.  **领域特定层 (Domain Specific Rules)**：
-    *   针对特定行业、技术栈或项目的约束（如汽车诊断标准、Web 前端框架约束、嵌入式安全规范）。
-    *   **按需加载**：根据当前任务的上下文，加载一个或多个相关的领域规则集。
-    *   **高优先级**：当领域规则与通用规则冲突时，领域规则具有更高优先级。
+### 1. 默认激活：通用基线 (Global Baseline)
+- **触发条件**：所有任务。
+- **加载规则**：`agent_rules/global_rules/`
+- **核心约束**：
+  - [x] **代码风格**：遵守 `coding-style.mdc` (C++14 No-Except / Python PEP8)。
+  - [x] **Git 流程**：禁止直接 Push 主干，遵循 Commit Message 规范。
+  - [x] **文档**：Markdown 格式，清晰分层。
 
-## 2. 现有规则集列表 (Current Rulesets)
+### 2. 条件激活：领域扩展 (Domain Extensions)
 
-当前目录下包含以下规则集：
+| 触发关键词 / 文件特征 | 激活规则集 | 优先级 |
+| :--- | :--- | :--- |
+| `UDS`, `DoIP`, `ECU`, `0x`, `RP1210` <br> 文件路径含 `HD_` 或 `platform` | **`agent_rules/diagnostic_rules/`** | **HIGHEST (覆盖 Global)** |
+| `React`, `Vue`, `CSS`, `HTML` <br> 文件后缀 `.tsx`, `.js` | *(预留: `web_rules/`)* | HIGH |
 
-### 2.1 通用基线
-*   **`global_rules/`**
-    *   **描述**：行业无关的通用软件开发标准。
-    *   **包含**：代码风格、协作流程、文档标准、测试策略。
-    *   **适用性**：所有任务。
+---
 
-### 2.2 领域特定扩展
-*   **`diagnostic_rules/`**
-    *   **描述**：汽车诊断软件开发专用规则。
-    *   **包含**：UDS/DoIP 协议实现规范、C++14 无异常约束、RP1210 架构、HIL/实车测试策略。
-    *   **适用性**：涉及汽车诊断、ECU 通信、车辆协议的开发任务。
+## ⚡ 冲突解决策略 (Conflict Resolution)
 
-*(注：未来新增的领域规则集应在此处列出)*
+当 **Domain Rules** 与 **Global Rules** 冲突时：
+> **Domain Rules >>> Global Rules**
 
-## 3. 规则加载与应用顺序 (Loading Order)
+**示例**：
+- *Global*: 推荐使用 C++17。
+- *Diagnostic*: 强制 C++14 且无异常。
+- ✅ **执行结果**: **严格遵守 C++14 无异常**。
 
-Agent 在启动或执行任务时，应遵循以下逻辑加载规则：
+---
 
-1.  **第一阶段：加载 `global_rules`**
-    *   建立默认的工程师人设与质量基线。
-    *   此时不假设特定业务背景。
+## 🛠️ 维护指南 (Maintenance)
 
-2.  **第二阶段：识别并加载领域规则**
-    *   根据用户输入的任务上下文（如“实现 UDS 服务”、“开发 React 页面”），识别需要激活的领域规则集。
-    *   **示例**：若任务涉及汽车诊断，加载 `diagnostic_rules` 并激活“汽车诊断架构师”角色。
-    *   若无特定领域匹配，则仅使用通用规则。
-
-## 4. 优先级与冲突解决 (Priority)
-
-当**领域规则 (Domain)** 与 **通用规则 (Global)** 发生冲突时：
-
-> **Domain Specific Rules >>> Global Rules**
-
-*   **原则**：特定场景的约束覆盖通用建议。
-*   **示例**：
-    *   *Global*: "推荐使用 C++17"。
-    *   *Diagnostic*: "必须使用 C++14 且禁止异常"。
-    *   *最终执行*: **C++14 且无异常**。
-
-## 5. 维护指南
-
-*   **新增通用规则**：
-    *   仅放入 `global_rules`。
-    *   **严禁**包含特定行业术语（如 "Car", "ECU", "React"）。
-    *   目标是“放之四海而皆准”。
-
-*   **新增领域规则**：
-    *   创建一个新的顶层目录（如 `web_frontend_rules/`, `embedded_safety_rules/`）。
-    *   在其中定义该领域的特定约束，可以覆盖 `global_rules` 中的默认设定。
-    *   在 `README.md` 中注册新规则集。
+- **Global Rules**: 仅存放行业无关的通用标准。严禁包含 "ECU", "Car" 等特定术语。
+- **Domain Rules**: 创建新目录（如 `web_rules/`），可覆盖 Global 默认值。

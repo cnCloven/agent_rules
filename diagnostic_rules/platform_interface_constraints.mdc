@@ -1,0 +1,123 @@
+---
+description: 平台基础接口 (CBinary, TString, CGroup) 调用规范与速查表
+globs: HD_*/**/*.{cpp,h}, diagnostic_rules/**/*
+alwaysApply: true
+---
+
+# 🛠️ 平台接口调用指南 (Platform Interface Constraints)
+
+**目标**：正确使用 `platform` 提供的基础设施类，避免内存泄漏、符号冲突与 API 误用。
+
+## 🚨 接口自检清单 (Interface Checklist)
+
+在调用任何平台接口前，**MUST** 执行以下检查：
+
+- [ ] **所有权检查**：返回 `T*` (裸指针) 的接口，**严禁 delete**；返回 `unique_ptr` 必须接管。
+- [ ] **全局变量**：仅使用 `extern` 声明的全局对象，**严禁**在业务代码中重定义 (ODR Violation)。
+- [ ] **API 拼写**：确认使用的是 `Add()` (PascalCase) 而非 `push_back()`，`GetSize()` 而非 `size()`。
+- [ ] **返回值**：必须检查 `Result` 或 `BOOL` 返回值，**严禁**忽略错误状态。
+
+## 📚 核心类速查表 (Core Classes Cheatsheet)
+
+### Header: `platform/inc/binary.h`
+
+#### 1. `CBinary` (Byte Array)
+用于存储 UDS 原始字节流。
+
+| 操作 | 平台 API | 对应 STL (仅作理解) | 注意事项 |
+| :--- | :--- | :--- | :--- |
+| **构造** | `CBinary(const char* p, WORD len)` | `vector<uint8_t>(p, p+len)` | 必须传长度 |
+| **追加** | `Append(const char* p, WORD len)` | `insert(end, p, p+len)` | |
+| **获取** | `BYTE GetAt(WORD index)` | `at(index)` | |
+| **大小** | `WORD GetSize()` | `size()` | 返回类型是 `WORD` |
+| **指针** | `BYTE* GetBuffer()` | `data()` | |
+
+**✅ DO:**
+```cpp
+const char raw[] = "\x10\x01";
+CBinary payload(raw, 2); // 必须指定长度
+payload.Append("\x00", 1);
+BYTE sid = payload.GetAt(0);
+```
+
+**❌ DON'T:**
+```cpp
+CBinary data;
+data.push_back(0x10); // ❌ 编译错误：没有 push_back，请用 Append
+data.size();          // ❌ 编译错误：没有 size，请用 GetSize
+```
+
+#### 2. `TString` (String Wrapper)
+用于旧版接口传参，新代码逻辑推荐用 `std::string`。
+
+| 操作 | 平台 API | 对应 STL (仅作理解) | 注意事项 |
+| :--- | :--- | :--- | :--- |
+| **获取 C串** | `const char* AsString()` | `c_str()` | 方法名是 `AsString` |
+| **长度** | `WORD GetLength()` | `length()` | |
+| **追加** | `Append(const char* str)` | `append()` | |
+| **判空** | `BOOL IsEmpty()` | `empty()` | |
+
+**✅ DO:**
+```cpp
+TString ts("Hello");
+// 仅在传给旧接口时使用
+LegacyFunction(ts.AsString());
+```
+
+**❌ DON'T:**
+```cpp
+TString ts;
+ts.length(); // ❌ 编译错误：请用 GetLength()
+std::string s = ts; // ❌ 隐式转换可能失败，请显式构造
+```
+
+#### 3. `CGroup<T>` (Vector Wrapper)
+用于旧版列表容器。
+
+| 操作 | 平台 API | 对应 STL (仅作理解) | 注意事项 |
+| :--- | :--- | :--- | :--- |
+| **添加** | `Add(T item)` | `push_back(item)` | 方法名是 `Add` |
+| **获取** | `T GetAt(WORD index)` | `at(index)` | |
+| **大小** | `WORD GetSize()` | `size()` | |
+| **清空** | `Empty()` | `clear()` | |
+
+**✅ DO:**
+```cpp
+CGroup<int> list;
+list.Add(42);
+int val = list.GetAt(0);
+```
+
+**❌ DON'T:**
+```cpp
+CGroup<int> list;
+list[0]; // ❌ 不支持下标操作符，请用 GetAt(0)
+```
+
+### Header: `platform/inc/platform_globals.h` (General Resources)
+
+#### 1. 全局对象与资源管理
+管理单例访问与对象生命周期。
+
+**✅ DO:**
+```cpp
+// 1. 正确使用全局对象
+// platform_globals.h: extern ILogger* g_logger;
+if (g_logger) {
+    g_logger->Log("Starting session...");
+}
+
+// 2. 资源生命周期
+auto session = factory->CreateSession(); // 假设返回 unique_ptr
+session->Start(); // 自动析构，无需 delete
+```
+
+**❌ DON'T:**
+```cpp
+// 1. 重定义全局变量
+ILogger* g_logger = nullptr; // ❌ 链接错误：与 platform 冲突 (ODR Violation)
+
+// 2. 错误释放所有权
+auto* dev = devMgr->GetActiveDevice(); // 返回观察者裸指针
+delete dev; // ❌ 严重错误：你没有所有权，会导致 Crash
+```

@@ -1,0 +1,70 @@
+---
+description: 技术栈选型与约束 (C++14, No Exceptions, Dependencies)
+globs: HD_*/**/*.{cpp,h,hpp}, diagnostic_rules/**/*
+alwaysApply: true
+---
+
+# 🛠️ 技术栈规范 (Tech Stack Specifications)
+
+**目标**：确保代码在嵌入式环境中的稳定性、可移植性与合规性。
+
+## 🚨 技术栈自检清单 (Tech Stack Checklist)
+
+在引入新库或编写关键逻辑时，**MUST** 执行以下检查：
+
+- [ ] **语言标准**：确认编译配置为 **C++14**，且未使用 C++17+ 特性。
+- [ ] **异常安全**：确认代码**未使用** `try/catch/throw`，且能通过 `-fno-exceptions` 编译。
+- [ ] **依赖合规**：确认引入的第三方库 License 兼容 (MIT/BSD/Apache)，**严禁 GPL**。
+- [ ] **平台依赖**：确认 JSON/XML 解析使用的是 `platform` 提供的库，而非自行引入 `nlohmann/json`。
+- [ ] **动态加载**：确认 RP1210 等驱动库是通过 `LoadLibrary` 动态加载的。
+
+## 💻 核心语言约束
+
+### 1. C++ Standard
+- **Version**: **C++14** (Strict).
+- **Rationale**: 兼容旧版编译器与嵌入式工具链。
+- **Forbidden**: `std::optional` (C++17), `std::variant` (C++17), `if constexpr`.
+
+### 2. Exception Handling
+- **Policy**: **NO EXCEPTIONS**.
+- **Rationale**: 嵌入式环境不支持 RTTI/Exceptions，且需避免不可控的 Stack Unwinding。
+- **Pattern**: 使用 `Result<T>` 或 `ErrorCode` 传递错误。
+
+## 📦 依赖管理 (Dependency Management)
+
+| 类别 | 允许 (Allowed) | 禁止 (Forbidden) |
+| :--- | :--- | :--- |
+| **STL** | `vector`, `string`, `algorithm`, `memory` | `iostream` (Binary bloat), `thread` (Use Platform API) |
+| **Platform** | `platform/inc/*.h` (JSON, XML, Zip) | 重复引入功能相同的开源库 |
+| **System** | 仅通过 `infrastructure` 层间接调用 | 直接在业务层调用 `windows.h` / `pthread.h` |
+| **External** | MIT/BSD License (需审核) | Boost (Bloat), GPL Libraries (Legal risk) |
+
+## ✅ DO (最佳实践)
+
+```cpp
+// 1. 错误处理 (No Exceptions)
+Result<int> Calculate(int input) {
+    if (input < 0) return Result<int>::Failure(ErrorCode::InvalidParam);
+    return Result<int>::Success(input * 2);
+}
+
+// 2. 智能指针 (C++14)
+auto ptr = std::make_unique<MyClass>(); // Allowed
+```
+
+## ❌ DON'T (常见错误)
+
+```cpp
+// 1. 使用异常
+int Calculate(int input) {
+    if (input < 0) throw std::invalid_argument("Input < 0"); // ❌ CRASH: Exception disabled
+    return input * 2;
+}
+
+// 2. 引入 C++17 特性
+if constexpr (true) { ... } // ❌ 编译错误
+
+// 3. 滥用 STL 流
+#include <iostream>
+std::cout << "Log"; // ❌ 禁止：会导致二进制体积剧增，请用 ILogger
+```

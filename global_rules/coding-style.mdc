@@ -1,0 +1,117 @@
+---
+description: 强制执行 C++14 和 Python 代码规范、命名约定及错误处理模式
+globs: **/*.{h,hpp,c,cpp,cc,py}
+alwaysApply: true
+---
+
+# 代码风格与规范 (Coding Style Standards)
+
+编写 C++ 或 Python 代码时，**必须**遵守以下规则。
+
+## 🚨 核心检查清单 (提交前必查)
+
+### 通用
+- [ ] **命名**：是否符合对应语言的命名约定（见下表）？
+- [ ] **注释**：是否解释了“为什么”而非“做什么”？
+
+### C++ 特定 (核心业务)
+- [ ] **无异常**：确认未使用 `try`, `catch`, `throw`。
+- [ ] **头文件**：确认未使用 `using namespace`，且包含 `#pragma once`。
+- [ ] **错误处理**：确认检查了所有 `Result<T>` 或 `ErrorCode` 返回值。
+- [ ] **内存**：确认未使用裸 `new`/`delete`（应使用 `std::unique_ptr`）。
+
+### Python 特定 (工具/脚本)
+- [ ] **PEP 8**：是否符合 PEP 8 风格（缩进 4 空格）。
+- [ ] **异常处理**：脚本入口是否捕获了顶层异常？
+- [ ] **类型提示**：关键接口是否有 Type Hints？
+
+---
+
+## 1. 命名约定 (Naming Conventions)
+
+| 元素 | C++ 风格 | C++ 示例 | Python 风格 | Python 示例 |
+| :--- | :--- | :--- | :--- | :--- |
+| **类/结构体** | PascalCase | `DiagnosticSession` | PascalCase | `DataParser` |
+| **函数/方法** | PascalCase | `StartRoutine` | snake_case | `parse_data` |
+| **变量 (局部)** | camelCase | `retryCount` | snake_case | `retry_count` |
+| **变量 (成员)** | m_ + camelCase | `m_timeoutMs` | snake_case | `self.timeout_ms` |
+| **常量** | kPascalCase | `kMaxRetryTimes` | UPPER_SNAKE | `MAX_RETRY_TIMES` |
+| **模块/文件** | snake_case | `uds_service.cpp` | snake_case | `uds_tool.py` |
+
+---
+
+## 2. C++ 规范 (C++14, No Exceptions)
+
+### ✅ DO (正确范例)
+
+```cpp
+// 1. 使用 Result<T> 或 ErrorCode 模式代替异常
+enum class ErrorCode { Ok, Timeout, InternalError };
+
+template <typename T>
+struct Result {
+    T value;
+    ErrorCode error;
+    bool isOk() const { return error == ErrorCode::Ok; }
+};
+
+// 2. 立即检查返回值
+auto result = transport->Send(data);
+if (!result.isOk()) {
+    return result.error;
+}
+
+// 3. 使用 RAII 管理资源
+std::unique_ptr<Session> session = std::make_unique<Session>();
+```
+
+### ❌ DON'T (错误范例)
+
+```cpp
+// 🚫 禁止使用异常
+try {
+    throw std::runtime_error("Error"); 
+} catch (...) {}
+
+// 🚫 禁止忽略错误
+transport->Send(data); // 缺少检查！
+
+// 🚫 禁止裸指针管理所有权
+Session* session = new Session();
+// ...
+delete session; // 容易遗漏
+```
+
+---
+
+## 3. Python 规范 (Scripting/Tools)
+
+### ✅ DO (正确范例)
+
+```python
+# 1. 使用 Type Hints
+def calculate_checksum(data: bytes) -> int:
+    return sum(data) % 256
+
+# 2. 顶层异常捕获
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print(f"Critical error: {e}")
+        sys.exit(1)
+```
+
+### ❌ DON'T (错误范例)
+
+```python
+# 🚫 禁止裸 except
+try:
+    process()
+except:  # 捕获了所有信号，包括 KeyboardInterrupt
+    pass
+
+# 🚫 禁止无类型提示的复杂逻辑
+def process(data): # data 是什么？
+    return data.magic()
+```

@@ -1,0 +1,75 @@
+---
+description: 诊断项目的文档结构与规范 (PICS, User Manual, Architecture)
+globs: doc/**/*, **/*.md, diagnostic_rules/**/*
+alwaysApply: false
+---
+
+# 📝 诊断文档规范 (Diagnostic Documentation Standards)
+
+**目标**：确保诊断项目具备清晰的协议声明 (PICS)、架构说明与用户手册，支持自动化测试与合规审查。
+
+## 🚨 文档自检清单 (Documentation Checklist)
+
+在提交文档或代码变更前，**MUST** 执行以下检查：
+
+- [ ] **PICS 完整性**：确认 `doc/protocol/pics_uds.md` 覆盖了所有实现的 UDS 服务 (SID) 与会话类型。
+- [ ] **PICS 准确性**：确认 PICS 中的 P2/P2* 时间参数与 `data/` 目录下的配置文件一致。
+- [ ] **架构同步**：若新增了业务模块，确认已更新 `doc/architecture/modules.md`。
+- [ ] **用户手册**：若修改了 UI 或操作流程，确认已更新 `doc/user/manual.md`。
+- [ ] **安全脱敏**：确认文档中**未包含**任何 OEM 内部密钥、密码或敏感算法细节。
+
+## 📂 必备文档结构 (Required Documents)
+
+| 文档类型 | 建议路径 | 内容要求 | 读者对象 |
+| :--- | :--- | :--- | :--- |
+| **PICS** | `doc/protocol/pics_uds.md` | 支持的 SID、Session、NRC、Timing | OEM, 测试, 架构师 |
+| **架构概览** | `doc/architecture/overview.md` | 系统上下文、模块依赖图、分层说明 | 开发, 架构师 |
+| **数据模型** | `doc/architecture/data_model.md` | 实体定义 (ECU, DTC)、配置加载逻辑 | 开发 |
+| **用户手册** | `doc/user/manual.md` | VCI 连接步骤、功能操作指南 (非技术) | 技师, 测试 |
+
+## ✅ DO (最佳实践)
+
+### 1. PICS 编写范例 (`pics_uds.md`)
+
+```markdown
+# UDS Protocol Implementation Conformance Statement
+
+## 1. Scope
+- Carline: HD_BEIQI
+- ECU: BCM, EMS, TCU
+
+## 2. Session Support
+| Session Name | SID | Supported | Notes |
+| :--- | :--- | :--- | :--- |
+| Default | 0x10 01 | ✅ | |
+| Extended | 0x10 03 | ✅ | Required for IO Control |
+| Programming | 0x10 02 | ❌ | Not implemented in Phase 1 |
+
+## 3. Service Support
+- **0x10** (DiagnosticSessionControl): Full support.
+- **0x27** (SecurityAccess): Level 1/2 supported. Seed/Key via external DLL.
+- **0x19** (ReadDTC): Sub-functions 0x02, 0x0A supported.
+
+## 4. Timing
+- **P2**: 50ms (Configurable via `config.ini`)
+- **P2***: 5000ms
+```
+
+### 2. 架构模块说明 (`modules.md`)
+
+```markdown
+## Module: SecurityAccessManager
+- **Layer**: Domain
+- **Responsibility**:
+  - Manage Security Level (Locked/Unlocked).
+  - Interface with `seed_key.dll`.
+- **Dependencies**:
+  - `IDiagTransport` (Send 0x27)
+  - `IPlatformSystem` (Load DLL)
+```
+
+## ❌ DON'T (常见错误)
+
+- **模糊描述**：不要写“支持所有 UDS 服务”，必须列出具体 SID 和 Sub-function。
+- **硬编码文档**：不要在文档中写死代码里的常量（如具体内存地址），应引用代码或配置文件。
+- **泄露机密**：**严禁**在 Markdown 中明文写出 Security Access 的计算公式或固定 Key。

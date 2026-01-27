@@ -1,0 +1,56 @@
+---
+description: 诊断业务的测试策略 (SIL/HIL, Coverage)
+globs: test/**/*, HD_*/**/test/**/*, diagnostic_rules/**/*
+alwaysApply: true
+---
+
+# 🧪 诊断测试规范 (Testing Specifics)
+
+**目标**：确保诊断功能在从 SIL 到 HIL 的各个阶段都能得到充分验证，覆盖协议异常与安全边界。
+
+## 🚨 测试自检清单 (Testing Checklist)
+
+在执行测试或编写测试用例时，**MUST** 执行以下检查：
+
+- [ ] **NRC 覆盖**：是否验证了 0x12, 0x13, 0x31, 0x7F 等常见否定响应？
+- [ ] **P2* 模拟**：是否模拟了 ECU 返回 0x78 (Pending) 及其后的延时响应？
+- [ ] **中断测试**：是否验证了刷写/长操作过程中的物理断开或电源丢失？
+- [ ] **Mock 隔离**：UT 中是否完全 Mock 了 `IDiagTransport`，不依赖真实硬件？
+
+## 📊 测试分层策略 (Testing Levels)
+
+### 1. 软件在环 (SIL)
+- **对象**：纯业务逻辑 (Domain Layer)。
+- **环境**：PC 模拟器，Mock Transport。
+- **重点**：状态机跳转、协议数据解析、边缘数据校验。
+
+### 2. 硬件在环 (HIL) / 台架
+- **对象**：集成后的系统 (System Under Test)。
+- **环境**：真实 ECU + 真实 VCI (RP1210) + 负载箱。
+- **重点**：
+    - **时序**：验证 P2/P2* 超时机制。
+    - **总线负载**：高负载下的丢包重发与恢复。
+    - **多路并发**：多 ECU 同时诊断的稳定性。
+
+### 3. 实车测试 (Vehicle)
+- **对象**：整车网络。
+- **重点**：副作用检查 (如诊断请求是否干扰了其他 CAN 报文)、行车安全互锁。
+
+## ✅ DO (最佳实践)
+
+```cpp
+// 1. UT Mock 示例 (GoogleTest)
+// 模拟 ECU 返回 NRC 0x12 (SubFunctionNotSupported)
+EXPECT_CALL(mockTransport, Send(_))
+    .WillOnce(Return(UdsResponse::FromNRC(0x12)));
+
+// 验证业务层是否正确映射错误
+auto result = service.ReadDTC();
+ASSERT_EQ(result.error, ErrorCode::NotSupported);
+```
+
+## ❌ DON'T (常见错误)
+
+- **仅测正向**：只测试了 "Success" 路径，忽略了 ECU 拒绝或超时的情况。
+- **依赖实车**：在开发阶段过度依赖实车环境，导致复现困难且效率低下。
+- **忽视 0x78**：测试工具未配置 0x78 响应，导致无法验证 P2* 逻辑。

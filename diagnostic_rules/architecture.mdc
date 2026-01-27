@@ -1,0 +1,86 @@
+---
+description: 诊断业务的分层架构与设计约束 (Architecture & Layering)
+globs: HD_*/**/*, diagnostic_rules/**/*
+alwaysApply: true
+---
+
+# 🏗️ 诊断架构约束 (Architecture & Layering)
+
+**目标**：确保 `HD_<Carline>` 业务逻辑高内聚、低耦合，严格遵守分层与依赖原则。
+
+## 🚨 架构自检清单 (Architecture Checklist)
+
+在设计或修改代码结构时，**MUST** 执行以下检查：
+
+- [ ] **物理目录检查**：确认代码位于 `HD_<Carline>/code`，数据位于 `HD_<Carline>/data`。
+- [ ] **依赖方向检查**：确认依赖方向为 `app -> domain -> infrastructure / data_access`，禁止反向或跨层调用。
+- [ ] **平台隔离检查**：确认 `domain` 层代码**未包含** `platform/inc` 头文件。
+- [ ] **RP1210 隔离**：确认所有 RP1210 动态加载逻辑封装在 `infrastructure` 层单独文件中。
+- [ ] **数据驱动**：确认车型差异参数（如 CAN ID、超时）通过配置文件加载，而非硬编码。
+
+## 📂 逻辑分层定义 (Logical Layers)
+
+| 层级 (Layer) | 目录 | 职责 (Responsibility) | 依赖约束 (Dependencies) |
+| :--- | :--- | :--- | :--- |
+| **App** | `code/app` | 用例编排、生命周期管理、UI 适配 | ✅ `domain`, `infra`, `data` <br> ❌ `platform` (直接) |
+| **Domain** | `code/domain` | **核心业务**：状态机、协议逻辑、实体模型 | ✅ `data` (Interfaces) <br> ❌ `platform`, `infra` (具体实现) |
+| **Infrastructure** | `code/infrastructure` | **适配层**：通信、日志、定时器、RP1210 加载 | ✅ `platform/inc`, OS API |
+| **Data Access** | `code/data_access` | **数据层**：读写 `data/` 目录下的配置文件 | ✅ `platform` (File IO) |
+
+## ✅ DO (最佳实践)
+
+```cpp
+// 1. 领域层定义抽象接口 (Domain Interface)
+// file: code/domain/interfaces/itransport.h
+class IDiagTransport {
+public:
+    virtual Result<void> Send(const std::vector<uint8_t>& data) = 0;
+};
+
+// 2. 基础设施层实现接口 (Infrastructure Implementation)
+// file: code/infrastructure/can_transport.h
+#include "platform/inc/can_driver.h" // 仅在此层引入平台头文件
+class CanTransport : public IDiagTransport {
+    // 调用平台 API 实现发送
+};
+
+// 3. 应用层注入依赖 (App Injection)
+// file: code/app/diag_session.cpp
+void StartSession() {
+    auto transport = std::make_shared<CanTransport>();
+    auto service = std::make_shared<UdsService>(transport); // 注入抽象
+    service->Start();
+}
+```
+
+## ❌ DON'T (常见错误)
+
+```cpp
+// 1. 领域层直接依赖平台 (Domain Violation)
+// file: code/domain/uds_service.cpp
+#include "platform/inc/can_driver.h" // ❌ 禁止！领域层不得污染平台细节
+
+void UdsService::Send() {
+    PlatformCanDriver::Write(...); // ❌ 错误：直接调用静态方法
+}
+
+// 2. 跨层调用 (Layer Skipping)
+// file: code/app/main.cpp
+#include <windows.h>
+void LoadDriver() {
+    LoadLibrary("rp1210.dll"); // ❌ 错误：App 层禁止直接操作 OS API，应下沉至 Infra 层
+}
+```
+
+## 🔌 RP1210 动态加载规范
+
+- **封装**：必须在 `infrastructure/rp1210_loader.{h,cpp}` 中实现。
+- **加载**：使用 `LoadLibrary` / `GetProcAddress`。
+- **安全**：必须检查 DLL 是否存在及函数指针是否有效，**严禁 Crash**。
+- **接口**：对外暴露 `IRp1210Device` 抽象接口，屏蔽 `short` / `long` 等底层类型差异。
+
+## 🧬 扩展性设计 (Extensibility)
+
+- **车系扩展**：通过新增 `HD_<Carline>` 目录隔离。
+- **车型差异**：通过 `data/*.json` 或 `data/*.ini` 配置驱动，禁止大量 `if (model == X)`。
+- **功能开关**：使用策略模式 (Strategy Pattern) 或 工厂模式 (Factory) 动态创建业务对象。

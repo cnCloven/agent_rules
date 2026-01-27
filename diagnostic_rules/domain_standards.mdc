@@ -1,0 +1,84 @@
+---
+description: UDS (ISO 14229) 与 DoIP (ISO 13400) 协议实现强制规范
+globs: HD_*/**/*, diagnostic_rules/**/*
+alwaysApply: true
+---
+
+# 📜 协议标准与实现规范 (Protocol Standards)
+
+**目标**：确保代码行为严格符合 ISO 标准与 OEM 规范，通过一致性测试。
+
+## 🚨 协议自检清单 (Protocol Checklist)
+
+在实现任何诊断服务前，**MUST** 执行以下检查：
+
+- [ ] **常量定义**：所有 SID/NRC 必须定义为 `enum class`，**严禁 Magic Number**。
+- [ ] **NRC 0x78**：必须自动处理 Pending 状态（重置 P2* 定时器），**严禁**将 0x78 视为错误抛给上层。
+- [ ] **长度校验**：发送请求前必须校验 DLC（数据长度），接收响应时必须校验最小长度。
+- [ ] **安全原子性**：Security Access (0x27) 的 Seed/Key 流程必须是原子的，中间不可插入其他服务。
+- [ ] **会话状态**：`EcuReset (0x11)` 后必须将内部状态机强制重置为 `DefaultSession`。
+
+## 📡 ISO 14229 (UDS) 实现约束
+
+### 1. 服务标识 (SID) 与响应
+- **正响应**：`Response SID = Request SID + 0x40`。
+- **负响应**：`0x7F + Request SID + NRC`。
+
+### 2. 时序控制 (Timing)
+- **P2 Server**：ECU 给出响应的最大时间（通常 50ms）。
+- **P2* Server**：ECU 发送 NRC 0x78 后，给出下一次响应的最大时间（通常 5000ms）。
+- **实现要求**：超时参数必须可配置（从 ODX/配置文件加载），**严禁硬编码**。
+
+### 3. 关键服务规范
+
+| 服务 | 名称 | 关键约束 |
+| :--- | :--- | :--- |
+| **0x10** | Session Control | 切换会话后必须更新 P2/P2* 参数 |
+| **0x11** | ECU Reset | 重启后必须断开连接或等待重连 |
+| **0x27** | Security Access | Seed/Key 算法必须隔离在 DLL 中 |
+| **0x22** | Read Data | 必须处理部分 DID 读取失败的情况 |
+| **0x31** | Routine Control | 必须支持 Start/Stop/Result 三种操作 |
+
+## 🌐 ISO 13400 (DoIP) 适配规范
+
+- **透明传输**：DoIP 仅作为 Transport Layer，业务层应保持纯 UDS 逻辑。
+- **逻辑地址**：SA (Source Address) 和 TA (Target Address) 必须从配置加载。
+- **大包分片**：虽然 DoIP 支持 4GB，但必须根据 ECU 接收缓冲区限制（如 4KB）进行分片。
+
+## ✅ DO (最佳实践)
+
+```cpp
+// 1. 标准常量定义
+enum class NRC : uint8_t {
+    Success = 0x00,
+    SubFunctionNotSupported = 0x12,
+    SecurityAccessDenied = 0x33,
+    ResponsePending = 0x78 // 关键
+};
+
+// 2. 0x78 自动处理
+Result<Response> SendRequest(const Request& req) {
+    auto response = transport->Send(req);
+    while (response.nrc == NRC::ResponsePending) {
+        // 重置 P2* 定时器，继续等待
+        Timer::Sleep(kP2StarTimeout);
+        response = transport->Receive(); 
+    }
+    return response;
+}
+```
+
+## ❌ DON'T (常见错误)
+
+```cpp
+// 1. 魔术数字
+transport->Send({0x10, 0x03}); // ❌ 难以维护，应使用 SID::SessionControl
+
+// 2. 忽略 0x78
+if (rsp[2] != 0x00) {
+    return Error; // ❌ 错误：0x78 是等待信号，不是失败
+}
+
+// 3. 硬编码超时
+timer.Start(50); // ❌ 错误：不同 ECU 的 P2 时间不同
+```
