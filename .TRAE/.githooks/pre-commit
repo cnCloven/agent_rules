@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CHECK_SCRIPT="$REPO_ROOT/.TRAE/ci/check_path_policy.py"
+
+PYTHON=""
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON="python"
+elif command -v py >/dev/null 2>&1; then
+  PYTHON="py -3"
+fi
+
+if [ -z "$PYTHON" ]; then
+  echo "path policy check: python 3 is required." >&2
+  echo "install python 3, then run: git config core.hooksPath .TRAE/.githooks" >&2
+  exit 1
+fi
+
+${PYTHON} -B "${CHECK_SCRIPT}" --staged
