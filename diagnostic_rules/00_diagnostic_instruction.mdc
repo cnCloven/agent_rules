@@ -74,7 +74,7 @@ if (response.nrc != 0x00) {
 - [architecture.mdc](mdc:diagnostic_rules/architecture.mdc): 诊断架构约束 (Architecture & Layering)
 - [documentation_specifics.mdc](mdc:diagnostic_rules/documentation_specifics.mdc): 诊断文档规范 (Diagnostic Documentation Standards)
 - [domain_standards.mdc](mdc:diagnostic_rules/domain_standards.mdc): 协议标准与实现规范 (Protocol Standards)
-- [platform_interface_constraints.mdc](mdc:diagnostic_rules/platform_interface_constraints.mdc): 平台接口调用指南 (Platform Interface Constraints)
+- [platform_interface_constraints/platformIndex.md](diagnostic_rules/platform_interface_constraints/platformIndex.md): 平台 API 索引 (Platform API Index)
 - [reverse_engineering.mdc](mdc:diagnostic_rules/reverse_engineering.mdc): 逆向工程规范 (Reverse Engineering Guidelines)
 - [tech_stack.mdc](mdc:diagnostic_rules/tech_stack.mdc): 技术栈规范 (Tech Stack Specifications)
 - [testing_specifics.mdc](mdc:diagnostic_rules/testing_specifics.mdc): 诊断测试规范 (Testing Specifics)
