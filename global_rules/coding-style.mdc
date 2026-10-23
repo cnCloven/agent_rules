@@ -1,5 +1,5 @@
 ---
-description: C++14 和 Python 代码规范、命名约定及错误处理模式
+description: C++ 和 Python 代码规范、命名约定及错误处理模式
 globs: "**/*.{h,hpp,c,cpp,cc,py}"
 alwaysApply: false
 ---
@@ -14,10 +14,9 @@ alwaysApply: false
 - [ ] **命名**：是否符合对应语言的命名约定（见下表）？
 - [ ] **注释**：是否解释了“为什么”而非“做什么”？
 
-### C++ 特定 (核心业务)
-- [ ] **无异常**：确认未使用 `try`, `catch`, `throw`。
+### C++ 特定
 - [ ] **头文件**：确认未使用 `using namespace`，且包含 `#pragma once`。
-- [ ] **错误处理**：确认检查了所有 `Result<T>` 或 `ErrorCode` 返回值。
+- [ ] **错误处理**：确认检查了返回值，未忽略失败。
 - [ ] **内存**：确认未使用裸 `new`/`delete`（应使用 `std::unique_ptr`）。
 
 ### Python 特定 (工具/脚本)
@@ -40,39 +39,26 @@ alwaysApply: false
 
 ---
 
-## 2. C++ 规范 (C++14, No Exceptions)
+## 2. C++ 规范
+
+C++ 语言版本、是否允许异常：由当前领域的技术栈规则规定。基线只要求命名、头文件、检查返回值、用 RAII 管资源。
 
 ### ✅ DO (正确范例)
 
 ```cpp
-// 1. 使用 Result<T> 或 ErrorCode 模式代替异常
-enum class ErrorCode { Ok, Timeout, InternalError };
-
-template <typename T>
-struct Result {
-    T value;
-    ErrorCode error;
-    bool isOk() const { return error == ErrorCode::Ok; }
-};
-
-// 2. 立即检查返回值
+// 1. 立即检查返回值
 auto result = transport->Send(data);
 if (!result.isOk()) {
     return result.error;
 }
 
-// 3. 使用 RAII 管理资源
+// 2. 使用 RAII 管理资源
 std::unique_ptr<Session> session = std::make_unique<Session>();
 ```
 
 ### ❌ DON'T (错误范例)
 
 ```cpp
-// 🚫 禁止使用异常
-try {
-    throw std::runtime_error("Error"); 
-} catch (...) {}
-
 // 🚫 禁止忽略错误
 transport->Send(data); // 缺少检查！
 
