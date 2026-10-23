@@ -1,0 +1,43 @@
+---
+description: 平台允许的头文件与调用禁令；详细手册按需打开
+globs: "HD_*/**/*.{h,hpp,c,cpp,cc},platform/**/*.{h,hpp,c,cpp,cc}"
+alwaysApply: false
+---
+
+# 平台接口短约束
+
+场景：我们在软件包里调用平台部门给的头文件和 lib，看不到源码。像链接厂商 SDK：只用公开方法，不要按 `std::vector` 的名字去猜。
+
+完整手册按需打开：`platform_interface_constraints/platformIndex.md`。本文件只列允许的头和禁止事项。没在手册里出现的 API 名不要编。
+
+## 允许包含的头（在 `infrastructure` 层）
+
+| 头文件 | 用途 |
+| :--- | :--- |
+| `platform/inc/binary.h`、`platform/inc/type.h` | 字节块、字符串、容器 |
+| `platform/inc/comm.h` | 收发诊断帧 |
+| `platform/inc/disp.h` | 弹框、菜单、列表 |
+| `platform/inc/file.h` | 配置与数据文件 |
+| `platform/inc/diag.h` | 诊断流程入口与全局对象 |
+| `platform/inc/baseComponents/**`、`platform/inc/customized/ComponentBuilder/*` | 新 UI 组件 |
+
+`domain` 层不要包含这些头，通过自己的接口注入。
+
+## 禁止
+
+- 不要改平台内部实现，不要重定义平台 `extern` 全局对象。
+- 平台返回的裸指针 `T*` 不要 `delete`；`unique_ptr` 才接管所有权。
+- 不要把 STL 方法名用在平台类上：`CBinary` / `CGroup` 用 `Add` / `GetAt` / `GetSize` / `Append`，不要 `push_back` / `size` / `[]`。
+- `TString` 用 `AsString` / `GetLength`，不要 `c_str` / `length`。
+- 必须检查 `Result` / `BOOL` 返回值，不要忽略失败。
+
+## 最小反例
+
+```cpp
+CBinary data;
+data.push_back(0x10); // 没有这个方法，用 Append
+data.size();          // 没有这个方法，用 GetSize
+
+auto* dev = devMgr->GetActiveDevice(); // 观察者裸指针
+delete dev; // 没有所有权，会导致崩溃
+```

@@ -181,26 +181,9 @@ AI Agent 在输出与“流程、协作相关”的建议、脚本或文档时�
   - 生成带版本号的安装包/压缩包；
   - 附带 release notes（变更说明）。
 
-### 5.4 文件目录管理规范（强制）
+### 5.4 已删除的路径检查
 
-- 所有新增的非 Markdown 文件（扩展名不为 `.md` 或 `.mdc`）必须放在仓库根目录的 `.TRAE/` 下。
-- 业务目录与规则目录（例如 `src/`、`docs/`、`scripts/`、`diagnostic_rules/`、`global_rules/`）只允许新增/修改 `.md` / `.mdc` 文档文件。
-- 缓存/调试/临时文件统一放置在 `.TRAE/` 下，建议按功能分区：
-  - `.TRAE/temp/`
-  - `.TRAE/cache/`
-  - `.TRAE/debug/`
-- 唯一例外：CI 配置文件允许放在 `.github/workflows/` 下（用于触发与执行流水线）。
-
-**本地提交拦截**
-
-- 安装预提交钩子：
-  - `powershell -ExecutionPolicy Bypass -File .TRAE/tools/install_hooks.ps1`
-- 钩子会在提交时检查暂存区文件，发现违反路径策略将直接拒绝提交。
-
-**CI 拦截**
-
-- 仓库提供 GitHub Actions 工作流：`.github/workflows/path-policy.yml`
-- 流水线会对受控分支与 PR 执行路径检查，自动拦截违规提交。
+仓库里曾经有过提交路径检查脚本，已经删除。不要去安装或恢复它们。
 
 ---
 

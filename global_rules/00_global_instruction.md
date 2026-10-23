@@ -38,7 +38,7 @@ alwaysApply: true
 
 | 规则文件 | 描述 |
 | :--- | :--- |
-| `coding_style.md` | 通用代码风格与编程规范 |
+| `coding-style.mdc` | 通用代码风格与编程规范 |
 | `workflow.md` | Git 工作流与版本控制策略 |
 | `documentation_standards.md` | 通用文档编写标准 |
 | `testing_standards.md` | 软件测试策略与质量基线 |

@@ -42,6 +42,7 @@ alwaysApply: true
 | `diagnostic_rules/architecture.mdc` | 同上 |
 | `diagnostic_rules/domain_standards.mdc` | 上述目录中的 `*.h / *.cpp` 等源码 |
 | `diagnostic_rules/tech_stack.mdc` | 同上 |
+| `diagnostic_rules/platform_interface_constraints.mdc` | 同上 |
 | `diagnostic_rules/testing_specifics.mdc` | 测试目录 |
 | `diagnostic_rules/reverse_engineering.mdc` | `reverse_engineering/**/*`、`*.idb`、`*.exe` |
 | `diagnostic_rules/documentation_specifics.mdc` | `HD_*/doc/**/*`、`HD_*/**/*.md` |
@@ -53,7 +54,7 @@ alwaysApply: true
 | `global_rules/workflow.md` | 分支、提交、CI、发布相关问题 |
 | `global_rules/collaboration.md` | 计划、拆任务、协作文档 |
 
-平台 API 手册在 `diagnostic_rules/platform_interface_constraints/`，没有文件头，需要时再打开。
+平台短约束见 `diagnostic_rules/platform_interface_constraints.mdc`。完整手册在 `diagnostic_rules/platform_interface_constraints/`，没有文件头，需要时再打开。
 
 ## 改规则时怎么写文件头
 

@@ -84,10 +84,11 @@ if (response.nrc != 0x00) {
 
 现在不用逐份读。按当前任务打开一份即可。
 
-- [architecture.mdc](mdc:diagnostic_rules/architecture.mdc)：包内怎么分层
-- [documentation_specifics.mdc](mdc:diagnostic_rules/documentation_specifics.mdc)：诊断文档
-- [domain_standards.mdc](mdc:diagnostic_rules/domain_standards.mdc)：协议怎么实现
-- [platform_interface_constraints/platformIndex.md](diagnostic_rules/platform_interface_constraints/platformIndex.md)：平台 API 索引
-- [reverse_engineering.mdc](mdc:diagnostic_rules/reverse_engineering.mdc)：逆向
-- [tech_stack.mdc](mdc:diagnostic_rules/tech_stack.mdc)：语言与依赖
-- [testing_specifics.mdc](mdc:diagnostic_rules/testing_specifics.mdc)：诊断测试
+- [architecture.mdc](architecture.mdc)：包内怎么分层
+- [documentation_specifics.mdc](documentation_specifics.mdc)：诊断文档
+- [domain_standards.mdc](domain_standards.mdc)：协议怎么实现
+- [platform_interface_constraints.mdc](platform_interface_constraints.mdc)：平台允许的头与禁令
+- [platformIndex.md](platform_interface_constraints/platformIndex.md)：平台 API 手册索引
+- [reverse_engineering.mdc](reverse_engineering.mdc)：逆向
+- [tech_stack.mdc](tech_stack.mdc)：语言与依赖
+- [testing_specifics.mdc](testing_specifics.mdc)：诊断测试
