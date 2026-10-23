@@ -1,6 +1,6 @@
 ---
 description: 诊断项目的文档结构与规范 (PICS, User Manual, Architecture)
-globs: doc/**/*, **/*.md, diagnostic_rules/**/*
+globs: HD_*/doc/**/*, HD_*/**/*.md
 alwaysApply: false
 ---
 

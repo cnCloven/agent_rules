@@ -1,3 +1,9 @@
+---
+description: 通用文档结构与写作规范
+globs: doc/**/*.md
+alwaysApply: false
+---
+
 ## 1. 目的与适用范围
 
 本文件规定通用文档的类型、结构与质量要求，覆盖：

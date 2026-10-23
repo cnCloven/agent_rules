@@ -1,3 +1,9 @@
+---
+description: 通用测试策略与质量基线
+globs: "**/test/**/*,**/*_test.*,**/*Test.*"
+alwaysApply: false
+---
+
 ## 1. 目的与适用范围
 
 本文件定义**测试策略与质量基线**，覆盖：

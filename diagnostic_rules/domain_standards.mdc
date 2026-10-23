@@ -1,7 +1,7 @@
 ---
 description: UDS (ISO 14229) 与 DoIP (ISO 13400) 协议实现强制规范
-globs: HD_*/**/*, diagnostic_rules/**/*
-alwaysApply: true
+globs: "HD_*/**/*.{h,hpp,c,cpp,cc},platform/**/*.{h,hpp,c,cpp,cc}"
+alwaysApply: false
 ---
 
 # 📜 协议标准与实现规范 (Protocol Standards)

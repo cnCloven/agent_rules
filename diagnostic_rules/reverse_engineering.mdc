@@ -1,7 +1,7 @@
 ---
 description: 逆向工程规范与安全指南 (Reverse Engineering)
-globs: reverse_engineering/**/*, **/*.idb, **/*.exe, diagnostic_rules/**/*
-alwaysApply: true
+globs: reverse_engineering/**/*, **/*.idb, **/*.exe
+alwaysApply: false
 ---
 
 # 🕵️ 逆向工程规范 (Reverse Engineering Guidelines)

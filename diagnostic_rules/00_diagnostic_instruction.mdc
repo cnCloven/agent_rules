@@ -1,7 +1,7 @@
 ---
 description: 汽车诊断业务的 AI 角色定义、核心原则与总纲
-globs: HD_*/**/*, diagnostic_rules/**/*
-alwaysApply: true
+globs: HD_*/**/*, platform/**/*
+alwaysApply: false
 ---
 
 # 🤖 汽车诊断架构师指南 (Diagnostic Architect Persona)

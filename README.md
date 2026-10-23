@@ -1,48 +1,58 @@
 ---
-description: 自动路由规则集：根据任务上下文加载 Global 或 Domain 规则
-globs: null
+description: 规则索引：说明文件头如何加载，列出各规则的实际生效条件
 alwaysApply: true
 ---
 
-# 🚀 Agent Rule Router
+# 规则索引
 
-**身份**：你是 Trae (或 Cursor)，一个拥有多领域知识的高级软件工程师。
-**职责**：你**必须**根据用户输入和当前文件上下文，动态激活正确的规则集。
+这个 IDE 只读各规则文件头顶上的开关，不会去加载一个目录。
 
-## 🚨 核心路由逻辑 (Critical Routing Logic)
+## 开关怎么读
 
-在回复任何消息前，执行以下路由检查：
+- **常开**（`alwaysApply: true`，不要写 `globs`）：每轮都注入。
+- **按后缀打开**（`alwaysApply: false` + `globs`）：打开匹配的文件才注入。
+- **按描述调用**（`alwaysApply: false`，不写 `globs`）：题目相关才注入。
 
-### 1. 默认激活：通用基线 (Global Baseline)
-- **触发条件**：所有任务。
-- **加载规则**：`agent_rules/global_rules/`
-- **核心约束**：
-  - [x] **代码风格**：遵守 `coding-style.mdc` (C++14 No-Except / Python PEP8)。
-  - [x] **Git 流程**：禁止直接 Push 主干，遵循 Commit Message 规范。
-  - [x] **文档**：Markdown 格式，清晰分层。
+常开和按后缀不能写在同一份头里。
 
-### 2. 条件激活：领域扩展 (Domain Extensions)
+## 冲突
 
-| 触发关键词 / 文件特征 | 激活规则集 | 优先级 |
-| :--- | :--- | :--- |
-| `UDS`, `DoIP`, `ECU`, `0x`, `RP1210` <br> 文件路径含 `HD_` 或 `platform` | **`agent_rules/diagnostic_rules/`** | **HIGHEST (覆盖 Global)** |
-| `React`, `Vue`, `CSS`, `HTML` <br> 文件后缀 `.tsx`, `.js` | *(预留: `web_rules/`)* | HIGH |
+领域规则覆盖基线规则。同一条约束只应出现在一层。
 
----
+## 生效表
 
-## ⚡ 冲突解决策略 (Conflict Resolution)
+**常开**
 
-当 **Domain Rules** 与 **Global Rules** 冲突时：
-> **Domain Rules >>> Global Rules**
+| 文件 | 作用 |
+| :--- | :--- |
+| `README.md`（本文件） | 索引 |
+| `global_rules/00_global_instruction.md` | 基线总纲与优先级 |
 
-**示例**：
-- *Global*: 推荐使用 C++17。
-- *Diagnostic*: 强制 C++14 且无异常。
-- ✅ **执行结果**: **严格遵守 C++14 无异常**。
+**基线：按后缀或按描述**
 
----
+| 文件 | 何时注入 |
+| :--- | :--- |
+| `global_rules/coding-style.mdc` | `*.h / *.hpp / *.c / *.cpp / *.cc / *.py` |
+| `global_rules/testing_standards.md` | 测试目录、`*_test.*`、`*Test.*` |
+| `global_rules/documentation_standards.md` | `doc/**/*.md` |
+| `global_rules/workflow.md` | 分支、提交、CI、发布相关问题 |
+| `global_rules/collaboration.md` | 计划、拆任务、协作文档 |
 
-## 🛠️ 维护指南 (Maintenance)
+**诊断：按后缀（打开 `HD_*` 或 `platform` 下的文件时）**
 
-- **Global Rules**: 仅存放行业无关的通用标准。严禁包含 "ECU", "Car" 等特定术语。
-- **Domain Rules**: 创建新目录（如 `web_rules/`），可覆盖 Global 默认值。
+| 文件 | 何时注入 |
+| :--- | :--- |
+| `diagnostic_rules/00_diagnostic_instruction.mdc` | `HD_*/**/*`、`platform/**/*` |
+| `diagnostic_rules/architecture.mdc` | 同上 |
+| `diagnostic_rules/domain_standards.mdc` | 上述目录中的 `*.h / *.cpp` 等源码 |
+| `diagnostic_rules/tech_stack.mdc` | 同上 |
+| `diagnostic_rules/testing_specifics.mdc` | 测试目录 |
+| `diagnostic_rules/reverse_engineering.mdc` | `reverse_engineering/**/*`、`*.idb`、`*.exe` |
+| `diagnostic_rules/documentation_specifics.mdc` | `HD_*/doc/**/*`、`HD_*/**/*.md` |
+
+平台 API 手册在 `diagnostic_rules/platform_interface_constraints/`，无文件头，需要时再打开。
+
+## 维护
+
+- **基线规则**：只放行业无关的通用标准。
+- **领域规则**：新建目录（如 `web_rules/`）覆盖基线。不要把领域文件标成常开。

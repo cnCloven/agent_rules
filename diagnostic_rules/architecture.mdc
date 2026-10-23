@@ -1,7 +1,7 @@
 ---
 description: 诊断业务的分层架构与设计约束 (Architecture & Layering)
-globs: HD_*/**/*, diagnostic_rules/**/*
-alwaysApply: true
+globs: HD_*/**/*, platform/**/*
+alwaysApply: false
 ---
 
 # 🏗️ 诊断架构约束 (Architecture & Layering)

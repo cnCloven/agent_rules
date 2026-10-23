@@ -1,3 +1,8 @@
+---
+description: Git 分支、Commit、PR、CI/CD 与发布流程
+alwaysApply: false
+---
+
 ## 1. 文档目标与适用范围
 
 本文件定义开发的**项目工作流与协作规范**，包括：

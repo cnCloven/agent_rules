@@ -1,7 +1,7 @@
 ---
 description: 诊断业务的测试策略 (SIL/HIL, Coverage)
-globs: test/**/*, HD_*/**/test/**/*, diagnostic_rules/**/*
-alwaysApply: true
+globs: "**/test/**/*,HD_*/**/test/**/*"
+alwaysApply: false
 ---
 
 # 🧪 诊断测试规范 (Testing Specifics)

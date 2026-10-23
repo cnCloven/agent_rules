@@ -1,7 +1,7 @@
 ---
-description: 强制执行 C++14 和 Python 代码规范、命名约定及错误处理模式
-globs: **/*.{h,hpp,c,cpp,cc,py}
-alwaysApply: true
+description: C++14 和 Python 代码规范、命名约定及错误处理模式
+globs: "**/*.{h,hpp,c,cpp,cc,py}"
+alwaysApply: false
 ---
 
 # 代码风格与规范 (Coding Style Standards)

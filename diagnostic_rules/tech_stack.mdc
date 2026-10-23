@@ -1,7 +1,7 @@
 ---
 description: 技术栈选型与约束 (C++14, No Exceptions, Dependencies)
-globs: HD_*/**/*.{cpp,h,hpp}, diagnostic_rules/**/*
-alwaysApply: true
+globs: "HD_*/**/*.{h,hpp,c,cpp,cc},platform/**/*.{h,hpp,c,cpp,cc}"
+alwaysApply: false
 ---
 
 # 🛠️ 技术栈规范 (Tech Stack Specifications)
