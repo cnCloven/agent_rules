@@ -5,42 +5,38 @@ alwaysApply: true
 
 # 规则索引
 
-这个 IDE 只读各规则文件头顶上的开关，不会去加载一个目录。
+这个 IDE 只读每个规则文件头顶上几行开关，不会去加载一个目录。像编译器先看 `#pragma once`。
 
-## 开关怎么读
+## 何时给到对话里
 
-- **常开**（`alwaysApply: true`，不要写 `globs`）：每轮都注入。
-- **按后缀打开**（`alwaysApply: false` + `globs`）：打开匹配的文件才注入。
-- **按描述调用**（`alwaysApply: false`，不写 `globs`）：题目相关才注入。
+- **每轮都给**：索引（本文件）、基线总纲。
+- **打开这类文件才给**：见下表。
+- **题目相关才给**：工作流、协作。
 
-常开和按后缀不能写在同一份头里。
-
-## 冲突
+每轮都给的文件，头里不要再写「打开哪些文件才给」。两套写在一起，后一套无效。
 
 领域规则覆盖基线规则。同一条约束只应出现在一层。
 
-## 生效表
-
-**常开**
+## 每轮都给
 
 | 文件 | 作用 |
 | :--- | :--- |
 | `README.md`（本文件） | 索引 |
 | `global_rules/00_global_instruction.md` | 基线总纲与优先级 |
 
-**基线：按后缀或按描述**
+## 打开这类文件才给
 
-| 文件 | 何时注入 |
+**基线**
+
+| 文件 | 何时给 |
 | :--- | :--- |
 | `global_rules/coding-style.mdc` | `*.h / *.hpp / *.c / *.cpp / *.cc / *.py` |
 | `global_rules/testing_standards.md` | 测试目录、`*_test.*`、`*Test.*` |
 | `global_rules/documentation_standards.md` | `doc/**/*.md` |
-| `global_rules/workflow.md` | 分支、提交、CI、发布相关问题 |
-| `global_rules/collaboration.md` | 计划、拆任务、协作文档 |
 
-**诊断：按后缀（打开 `HD_*` 或 `platform` 下的文件时）**
+**诊断（打开 `HD_*` 或 `platform` 下的文件时）**
 
-| 文件 | 何时注入 |
+| 文件 | 何时给 |
 | :--- | :--- |
 | `diagnostic_rules/00_diagnostic_instruction.mdc` | `HD_*/**/*`、`platform/**/*` |
 | `diagnostic_rules/architecture.mdc` | 同上 |
@@ -50,9 +46,24 @@ alwaysApply: true
 | `diagnostic_rules/reverse_engineering.mdc` | `reverse_engineering/**/*`、`*.idb`、`*.exe` |
 | `diagnostic_rules/documentation_specifics.mdc` | `HD_*/doc/**/*`、`HD_*/**/*.md` |
 
-平台 API 手册在 `diagnostic_rules/platform_interface_constraints/`，无文件头，需要时再打开。
+**题目相关才给**
+
+| 文件 | 何时给 |
+| :--- | :--- |
+| `global_rules/workflow.md` | 分支、提交、CI、发布相关问题 |
+| `global_rules/collaboration.md` | 计划、拆任务、协作文档 |
+
+平台 API 手册在 `diagnostic_rules/platform_interface_constraints/`，没有文件头，需要时再打开。
+
+## 改规则时怎么写文件头
+
+开关写在文件头顶上，不要写进正文当主语。
+
+- 每轮都给：`alwaysApply: true`，不要写 `globs`
+- 打开匹配的文件才给：`alwaysApply: false`，并写 `globs`
+- 题目相关才给：`alwaysApply: false`，不写 `globs`
 
 ## 维护
 
 - **基线规则**：只放行业无关的通用标准。
-- **领域规则**：新建目录（如 `web_rules/`）覆盖基线。不要把领域文件标成常开。
+- **领域规则**：新建目录（如 `web_rules/`）覆盖基线。不要把领域文件标成每轮都给。
