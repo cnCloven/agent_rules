@@ -23,6 +23,8 @@ alwaysApply: false
 
 未知先当未知：宿主怎么加载、目录路径、包格式、平台完整 API 清单。缺了不要编。
 
+下面从「核心原则」起到文末，是改车上代码时才要。没在改 `HD_*` / `platform`：协议名、目录表、规则列表现在不用看。
+
 ## 🚨 核心原则 (Critical Principles)
 
 在执行任何诊断相关任务时，**MUST** 严格遵守以下约束：
@@ -44,6 +46,8 @@ alwaysApply: false
 - **MUST** 确保代码能抵抗 ECU 通信不稳定（丢包、延迟）。
 
 ## 📂 项目结构规范
+
+这张表只说哪些目录可以改。包内代码怎么分层见 `architecture.mdc`，不要和这张表混成一套。
 
 | 目录 | 职责 | 允许操作 |
 | :--- | :--- | :--- |
@@ -83,12 +87,14 @@ if (response.nrc != 0x00) {
 }
 ```
 
-## 📋 规则索引 (Rule Index)
+## 其它规则（需要时再打开）
 
-- [architecture.mdc](mdc:diagnostic_rules/architecture.mdc): 诊断架构约束 (Architecture & Layering)
-- [documentation_specifics.mdc](mdc:diagnostic_rules/documentation_specifics.mdc): 诊断文档规范 (Diagnostic Documentation Standards)
-- [domain_standards.mdc](mdc:diagnostic_rules/domain_standards.mdc): 协议标准与实现规范 (Protocol Standards)
-- [platform_interface_constraints/platformIndex.md](diagnostic_rules/platform_interface_constraints/platformIndex.md): 平台 API 索引 (Platform API Index)
-- [reverse_engineering.mdc](mdc:diagnostic_rules/reverse_engineering.mdc): 逆向工程规范 (Reverse Engineering Guidelines)
-- [tech_stack.mdc](mdc:diagnostic_rules/tech_stack.mdc): 技术栈规范 (Tech Stack Specifications)
-- [testing_specifics.mdc](mdc:diagnostic_rules/testing_specifics.mdc): 诊断测试规范 (Testing Specifics)
+现在不用逐份读。按当前任务打开一份即可。
+
+- [architecture.mdc](mdc:diagnostic_rules/architecture.mdc)：包内怎么分层
+- [documentation_specifics.mdc](mdc:diagnostic_rules/documentation_specifics.mdc)：诊断文档
+- [domain_standards.mdc](mdc:diagnostic_rules/domain_standards.mdc)：协议怎么实现
+- [platform_interface_constraints/platformIndex.md](diagnostic_rules/platform_interface_constraints/platformIndex.md)：平台 API 索引
+- [reverse_engineering.mdc](mdc:diagnostic_rules/reverse_engineering.mdc)：逆向
+- [tech_stack.mdc](mdc:diagnostic_rules/tech_stack.mdc)：语言与依赖
+- [testing_specifics.mdc](mdc:diagnostic_rules/testing_specifics.mdc)：诊断测试
